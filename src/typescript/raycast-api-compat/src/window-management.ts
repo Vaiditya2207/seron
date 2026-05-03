@@ -1,5 +1,5 @@
 import { RaycastApplication, transformApp } from './system';
-import * as vicinae from '@vicinae/api';
+import * as seron from '@seron/api';
 
 type RaycastWindow = {
 	active: boolean;
@@ -25,7 +25,7 @@ type RaycastDesktop = {
 	type: DesktopType;
 };
 
-const transformNativeDesktop = (win: vicinae.WindowManagement.Workspace): RaycastDesktop => {
+const transformNativeDesktop = (win: seron.WindowManagement.Workspace): RaycastDesktop => {
 	return {
 		id: win.id,
 		screenId: win.monitorId,
@@ -35,7 +35,7 @@ const transformNativeDesktop = (win: vicinae.WindowManagement.Workspace): Raycas
 	};
 }
 
-const transformNativeWindow = (win: vicinae.WindowManagement.Window): RaycastWindow => {
+const transformNativeWindow = (win: seron.WindowManagement.Window): RaycastWindow => {
 	return {
 		id: win.id,
 		fullScreenSettable: true,
@@ -50,19 +50,19 @@ const transformNativeWindow = (win: vicinae.WindowManagement.Window): RaycastWin
 
 class RaycastWindowManagement {
 	async getActiveWindow(): Promise<RaycastWindow> {
-		const window = await vicinae.WindowManagement.getActiveWindow();
+		const window = await seron.WindowManagement.getActiveWindow();
 
 		return transformNativeWindow(window);
 	}
 
 	async getDesktops(): Promise<RaycastDesktop[]> {
-		const workspaces = await vicinae.WindowManagement.getWorkspaces();
+		const workspaces = await seron.WindowManagement.getWorkspaces();
 
 		return workspaces.map(transformNativeDesktop);
 	}
 
 	async getWindowsOnActiveDesktop(): Promise<RaycastWindow[]> {
-		const wins = await vicinae.WindowManagement.getWindowsOnActiveWorkspace();
+		const wins = await seron.WindowManagement.getWindowsOnActiveWorkspace();
 
 		return wins.map(transformNativeWindow);
 	}

@@ -2,7 +2,7 @@
   "name": "@seron/raycast-api-compat",
   "version": "0.0.0",
   "description": "Raycast compatible entrypoint to the seron API",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

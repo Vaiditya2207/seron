@@ -1,4 +1,4 @@
-import type { Environment } from "@vicinae/api";
+import type { Environment } from "@seron/api";
 import type { Client } from "./proto/api";
 
 type VicinaGlobal = {
@@ -9,14 +9,14 @@ type VicinaGlobal = {
 };
 
 type Global = typeof globalThis & {
-	vicinae: VicinaGlobal;
+	seron: VicinaGlobal;
 };
 
-(globalThis as Global).vicinae = {
+(globalThis as Global).seron = {
 	environ: {} as any,
 	preferences: {} as any,
 	client: {} as any,
 	navigationContext: undefined as any,
 };
 
-export const globalState = (globalThis as Global).vicinae;
+export const globalState = (globalThis as Global).seron;

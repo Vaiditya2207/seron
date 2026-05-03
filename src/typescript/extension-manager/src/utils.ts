@@ -16,7 +16,7 @@ const platformDataDir = () => {
 	return join(homedir(), ".data");
 };
 
-export const dataDir = () => join(platformDataDir(), "vicinae");
+export const dataDir = () => join(platformDataDir(), "seron");
 
 export const runtimeDir = () => join(dataDir(), "runtime");
 

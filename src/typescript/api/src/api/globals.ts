@@ -8,4 +8,4 @@ export interface VicinaGlobal {
 	navigationContext: React.Context<any>;
 }
 
-export const getGlobal = () => (globalThis as any).vicinae as VicinaGlobal;
+export const getGlobal = () => (globalThis as any).seron as VicinaGlobal;

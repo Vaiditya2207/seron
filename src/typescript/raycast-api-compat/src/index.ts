@@ -1,6 +1,6 @@
 /**
  * Raycast compatible entrypoint.
- * We mostly re-export @vicinae/api stuff but it is expected that @vicinae/api will
+ * We mostly re-export @seron/api stuff but it is expected that @seron/api will
  * become more and more independent overtime, not strictly following what Raycast does
  * but remaining compatible with it.
  */
@@ -30,7 +30,7 @@ export {
 
 	List, Grid, Form, Detail,
 	Action
-} from '@vicinae/api';
+} from '@seron/api';
 
 export {
 	getFrontmostApplication,

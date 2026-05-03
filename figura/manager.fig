@@ -17,7 +17,7 @@ enum CommandEnv {
 struct LoadOptions {
   mode: CommandMode;
   env: CommandEnv;
-  vicinae_path: string;
+  seron_path: string;
   entrypoint: string;
   is_raycast: bool;
   command_name: string;

@@ -18,7 +18,6 @@
 #include "services/raycast/raycast-store.hpp"
 #include "services/extension-store/seron-store.hpp"
 #include "services/root-item-manager/root-item-manager.hpp"
-#include "services/telemetry/telemetry-service.hpp"
 #include "services/toast/toast-service.hpp"
 #include "services/window-manager/window-manager.hpp"
 #include "services/snippet/snippet-service.hpp"
@@ -63,8 +62,6 @@ NewsService *ServiceRegistry::newsService() const { return m_newsService.get(); 
 BackgroundEffectManager *ServiceRegistry::backgroundEffectManager() const {
   return m_backgroundEffectManager.get();
 }
-
-TelemetryService *ServiceRegistry::telemetry() const { return m_telemetry.get(); }
 
 void ServiceRegistry::setPowerManager(std::unique_ptr<PowerManager> powman) {
   m_powerManager = std::move(powman);
@@ -146,10 +143,6 @@ void ServiceRegistry::setNewsService(std::unique_ptr<NewsService> service) {
 
 void ServiceRegistry::setBackgroundEffectManager(std::unique_ptr<BackgroundEffectManager> service) {
   m_backgroundEffectManager = std::move(service);
-}
-
-void ServiceRegistry::setTelemetry(std::unique_ptr<TelemetryService> telemetry) {
-  m_telemetry = std::move(telemetry);
 }
 
 ServiceRegistry *ServiceRegistry::instance() {

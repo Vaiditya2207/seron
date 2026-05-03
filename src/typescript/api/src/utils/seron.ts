@@ -1,12 +1,12 @@
 import { spawnSync } from "node:child_process";
 
-export type VicinaeClientOptions = {
+export type SeronClientOptions = {
 	binaryPath: string;
 };
 
-export class VicinaeClient {
+export class SeronClient {
 	constructor(
-		private readonly options: VicinaeClientOptions = { binaryPath: "vicinae" },
+		private readonly options: SeronClientOptions = { binaryPath: "seron" },
 	) {}
 
 	ping() {
@@ -30,7 +30,7 @@ export class VicinaeClient {
 			endpoint = endpoint.slice(1);
 		}
 
-		const url = `vicinae://${endpoint}`;
+		const url = `seron://${endpoint}`;
 		const result = spawnSync(this.options.binaryPath, [url]);
 
 		if (result.error) return result.error;

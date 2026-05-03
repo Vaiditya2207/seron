@@ -11,7 +11,7 @@ import {
 	extensionInternalSupportDir,
 } from "../../utils/utils.js";
 import { updateExtensionTypes } from "../../utils/extension-types.js";
-import { VicinaeClient } from "../../utils/vicinae.js";
+import { SeronClient } from "../../utils/seron.js";
 import ManifestSchema from "../../schemas/manifest.js";
 import { Tail } from "../../utils/tail.js";
 
@@ -64,7 +64,7 @@ export default class Develop extends Command {
 		};
 
 		let manifest = parseManifest();
-		const vicinae = new VicinaeClient();
+		const seron = new SeronClient();
 
 		logger.logInfo("Generating extension types...");
 		updateExtensionTypes(manifest, flags.target);
@@ -128,7 +128,7 @@ export default class Develop extends Command {
 				return esbuild.build({
 					bundle: true,
 					entryPoints: [source],
-					external: ["react", "@vicinae/api", "@raycast/api"],
+					external: ["react", "@seron/api", "@raycast/api"],
 					format: "cjs",
 					outdir: outDir,
 					platform: "node",
@@ -152,10 +152,10 @@ export default class Develop extends Command {
 			}
 		};
 
-		const pingError = vicinae.ping();
+		const pingError = seron.ping();
 
 		if (pingError) {
-			console.error(`Failed to ping vicinae\n`, pingError.message);
+			console.error(`Failed to ping seron\n`, pingError.message);
 			return;
 		}
 
@@ -165,7 +165,7 @@ export default class Develop extends Command {
 				await build(extensionDir);
 				const time = performance.now() - start;
 				logger.logReady(`Extension built in ${Math.round(time)}ms 🚀`);
-				vicinae.refreshDevSession(id);
+				seron.refreshDevSession(id);
 			} catch (error: unknown) {
 				if (error instanceof Error) {
 					logger.logError(`Failed to build extension: ${error.message}`);
@@ -209,14 +209,14 @@ export default class Develop extends Command {
 
 		process.on("SIGINT", () => {
 			logger.logInfo("Shutting down...");
-			vicinae.stopDevSession(id);
+			seron.stopDevSession(id);
 			throw new Error(`Development session interrupted`);
 		});
 
-		const error = vicinae.startDevSession(id);
+		const error = seron.startDevSession(id);
 
 		if (error) {
-			console.error(`Failed to invoke vicinae`, error);
+			console.error(`Failed to invoke seron`, error);
 			return;
 		}
 

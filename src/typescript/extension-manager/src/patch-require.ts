@@ -23,15 +23,15 @@ export const patchRequire = (env: EnvironmentType) => {
 	const reconciler = require("react-reconciler");
 	const react = require("react");
 	const jsxRuntime = require("react/jsx-runtime");
-	const api = require("@vicinae/api");
-	const apiCompat = require("@vicinae/raycast-api-compat");
+	const api = require("@seron/api");
+	const apiCompat = require("@seron/raycast-api-compat");
 	delete process.env.NODE_ENV;
 
 	const requireOverrides: Record<string, any> = {
 		react: () => react,
 		"react/jsx-runtime": () => jsxRuntime,
 		"react-reconciler": () => reconciler,
-		"@vicinae/api": () => api,
+		"@seron/api": () => api,
 		"@raycast/api": () => apiCompat,
 	};
 	const originalRequire = Module.prototype.require;

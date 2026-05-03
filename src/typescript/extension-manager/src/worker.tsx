@@ -2,7 +2,7 @@ import "./globals";
 import { globalState } from "./globals";
 import type { EnvironmentType } from "./types";
 import { parentPort, workerData } from "node:worker_threads";
-import { LaunchType } from "@vicinae/api";
+import { LaunchType } from "@seron/api";
 import { patchRequire } from "./patch-require";
 import loadView from "./loaders/load-view-command";
 import loadNoView from "./loaders/load-no-view-command";

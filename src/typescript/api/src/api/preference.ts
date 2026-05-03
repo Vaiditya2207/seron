@@ -9,7 +9,7 @@ export const getPreferenceValues = <
 };
 
 /**
- * Opens the extension preferences in the vicinae settings window.
+ * Opens the extension preferences in the seron settings window.
  */
 export const openExtensionPreferences = async (): Promise<void> => {
 	console.error("openExtensionPreferences is not implemented");
@@ -18,7 +18,7 @@ export const openExtensionPreferences = async (): Promise<void> => {
 };
 
 /**
- * Open the command preferences in the vicinae settings window.
+ * Open the command preferences in the seron settings window.
  */
 export const openCommandPreferences = async (): Promise<void> => {
 	await getClient().Command.openCommandPreferences();

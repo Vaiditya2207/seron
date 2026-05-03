@@ -72,14 +72,5 @@ Flickable {
             }
         }
 
-        SettingsRow {
-            label: "Basic usage statistics"
-            description: "Send basic system and seron installation information on startup to help improve Seron."
-            showSeparator: false
-            SettingsToggle {
-                checked: root.model.telemetrySystemInfo
-                onToggled: root.model.telemetrySystemInfo = checked
-            }
-        }
     }
 }

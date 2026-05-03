@@ -37,13 +37,13 @@ class ExtensionManager extends manager.ManagerService {
 	async load(load: manager.LoadOptions): Promise<manager.LoadResponse> {
 		const sessionId = randomUUID();
 		const supportPath = path.join(
-			load.vicinae_path,
+			load.seron_path,
 			"support",
 			load.extension_id,
 		);
-		const supportInternal = path.join(supportPath, ".vicinae"); // for log stream, cli pid file...
+		const supportInternal = path.join(supportPath, ".seron"); // for log stream, cli pid file...
 		const assetsPath = path.join(
-			load.vicinae_path,
+			load.seron_path,
 			"extensions",
 			load.extension_id,
 			"assets",
@@ -203,7 +203,7 @@ class ExtensionManager extends manager.ManagerService {
 	private readonly workerMap = new Map<string, WorkerInfo>();
 }
 
-class Vicinae {
+class Seron {
 	private currentMessage: { data: Buffer } = {
 		data: Buffer.from(""),
 	};
@@ -264,7 +264,7 @@ const main = async () => {
 		process.exit(1);
 	}
 
-	new Vicinae();
+	new Seron();
 };
 
 main();

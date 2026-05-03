@@ -127,9 +127,9 @@ export interface Environment {
 	launchContext?: LaunchContext;
 
 	/**
-	 * The Vicinae version. Vicinae extensions should rely on this and ignore `raycastVersion`.
+	 * The Seron version. Seron extensions should rely on this and ignore `raycastVersion`.
 	 */
-	vicinaeVersion: {
+	seronVersion: {
 		tag: string;
 		commit: string;
 	};
@@ -142,12 +142,12 @@ export interface Environment {
 }
 
 /**
- * General information about the running extension command, the vicinae version, the capabilities of
+ * General information about the running extension command, the seron version, the capabilities of
  * the system we are running on, etc...
  *
  * @example
  * ```typescript
- * import { environment } from '@vicinae/api';
+ * import { environment } from '@seron/api';
  *
  * console.log({ environment });
  * ```

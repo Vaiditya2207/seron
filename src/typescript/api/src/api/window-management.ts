@@ -30,7 +30,7 @@ const transformWindow = (proto: api.Window): WindowManagement.Window => {
 };
 
 /**
- * Access Vicinae's window management features.
+ * Access Seron's window management features.
  *
  * @remarks
  * Window management support varies a lot depending on the environment.
@@ -38,7 +38,7 @@ const transformWindow = (proto: api.Window): WindowManagement.Window => {
  *
  * @example
  * ```typescript
- * import { WindowManagement } from '@vicinae/api';
+ * import { WindowManagement } from '@seron/api';
  *
  * const wins = await WindowManagement.getWindows();
  * const browserWindow = wins.find(w => w.application?.name?.includes('firefox'));

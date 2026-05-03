@@ -1,5 +1,5 @@
 {
-  "name": "com.vicinae.vicinae",
+  "name": "com.seron.seron",
   "description": "IPC Native Messaging Host",
   "path": "@NATIVE_HOST_BIN@",
   "type": "stdio",

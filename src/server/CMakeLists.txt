@@ -450,9 +450,6 @@ set(SRCS
 	src/services/news/news-service.hpp
 	src/services/news/news-service.cpp
 
-	src/services/telemetry/telemetry-service.hpp
-	src/services/telemetry/telemetry-service.cpp
-
 	src/services/snippet/snippet-service.hpp
 	src/services/snippet/snippet-server.hpp
 	src/services/snippet/snippet-db.cpp

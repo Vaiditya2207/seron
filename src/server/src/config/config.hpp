@@ -173,13 +173,6 @@ template <> struct Partial<Footer> {
   std::optional<int> height;
 };
 
-struct TelemetryConfig {
-  bool systemInfo = true;
-};
-
-template <> struct Partial<TelemetryConfig> {
-  std::optional<bool> systemInfo;
-};
 
 using KeybindMap = std::map<std::string, std::string>;
 
@@ -203,8 +196,6 @@ struct ConfigValue {
 
   FontConfig font;
   ThemeConfig theme;
-  TelemetryConfig telemetry;
-
   WindowConfig launcherWindow;
   Header header;
   Footer footer;
@@ -253,8 +244,6 @@ template <> struct Partial<ConfigValue> {
 
   std::optional<Partial<FontConfig>> font;
   std::optional<Partial<ThemeConfig>> theme;
-  std::optional<Partial<TelemetryConfig>> telemetry;
-
   std::optional<Partial<WindowConfig>> launcherWindow;
   std::optional<Partial<Header>> header;
   std::optional<Partial<Footer>> footer;

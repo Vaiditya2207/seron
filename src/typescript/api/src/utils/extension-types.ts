@@ -15,7 +15,7 @@ export function updateExtensionTypes(
 	outDir: string,
 ): { envPath: string } {
 	const content = createExtensionTypes(manifest);
-	const envPath = join(outDir, "vicinae-env.d.ts");
+	const envPath = join(outDir, "seron-env.d.ts");
 	writeFileSync(envPath, content);
 	return { envPath };
 }
@@ -29,7 +29,7 @@ export function createExtensionTypes(manifest: Manifest): string {
 	const argTypes = generateCommandArguments(manifest);
 
 	return `
-/// <reference types="@vicinae/api">
+/// <reference types="@seron/api">
 
 /*
  * This file is auto-generated from the extension's manifest.

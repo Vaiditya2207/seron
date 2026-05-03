@@ -274,7 +274,7 @@ export default z.object({
 				})
 				.strict()
 				.describe(
-					"Keyboard shortcut used to refresh/reload a command while the Vicinae window is focused.",
+					"Keyboard shortcut used to refresh/reload a command while the Seron window is focused.",
 				)
 				.optional(),
 		})
@@ -331,13 +331,13 @@ export default z.object({
 						.string()
 						.regex(new RegExp("^[^\\s]+(?:[ ]*[^\\s]+)*$"))
 						.describe(
-							"A 512x512 icon representing the command. It will be displayed in Preferences and Vicinae root search. If a command doesn't have an icon, it will 'inherit' the extension's icon. Please note that light and dark themes are supported; just append '@dark' or '@light' to the icons name and the correct icon will be picked at run-time. For example, write for this property 'icon.png' and have in the assets folder the 'icon@light.png' and 'icon@dark.png' assets.",
+							"A 512x512 icon representing the command. It will be displayed in Preferences and Seron root search. If a command doesn't have an icon, it will 'inherit' the extension's icon. Please note that light and dark themes are supported; just append '@dark' or '@light' to the icons name and the correct icon will be picked at run-time. For example, write for this property 'icon.png' and have in the assets folder the 'icon@light.png' and 'icon@dark.png' assets.",
 						)
 						.optional(),
 					mode: z
 						.enum(["view", "no-view", "menu-bar"])
 						.describe(
-							"A value of 'view' indicates that the command will show a main view when performed. 'no-view' means that the command does not push a view to the main navigation stack in Vicinae. The latter is handy for directly opening URL or other API functionality that doesn't require a user interface. 'menu-bar' renders an extra item in the macOS system menu bar at the top of the screen.",
+							"A value of 'view' indicates that the command will show a main view when performed. 'no-view' means that the command does not push a view to the main navigation stack in Seron. The latter is handy for directly opening URL or other API functionality that doesn't require a user interface. 'menu-bar' renders an extra item in the macOS system menu bar at the top of the screen.",
 						),
 					name: z
 						.string()
@@ -353,7 +353,7 @@ export default z.object({
 						.min(2)
 						.max(255)
 						.describe(
-							"The command title will be displayed in the Store, Preferences, and in Vicinae's root search.",
+							"The command title will be displayed in the Store, Preferences, and in Seron's root search.",
 						),
 					keywords: z.any().optional(),
 					subtitle: z
@@ -383,7 +383,7 @@ export default z.object({
 					preferences: z
 						.array(preferenceSchema)
 						.describe(
-							'Commands can optionally contribute preferences that are shown in Vicinae Preferences > Extensions when selecting the command. You can use preferences for configuration values and passwords or personal access tokens. Commands automatically "inherit" extension preferences and can also override entries with the same `name`.',
+							'Commands can optionally contribute preferences that are shown in Seron Preferences > Extensions when selecting the command. You can use preferences for configuration values and passwords or personal access tokens. Commands automatically "inherit" extension preferences and can also override entries with the same `name`.',
 						)
 						.optional(),
 					arguments: z
@@ -412,7 +412,7 @@ export default z.object({
 						.string()
 						.regex(new RegExp("^[^\\s]+(?:[ ]*[^\\s]+)*$"))
 						.describe(
-							"A 512x512 icon representing the tool. It will be displayed in various places across Vicinae. If a tool doesn't have an icon, it will 'inherit' the extension's icon. Please note that light and dark themes are supported; just append '@dark' or '@light' to the icons name and the correct icon will be picked at run-time. For example, write for this property 'icon.png' and have in the assets folder the 'icon@light.png' and 'icon@dark.png' assets.",
+							"A 512x512 icon representing the tool. It will be displayed in various places across Seron. If a tool doesn't have an icon, it will 'inherit' the extension's icon. Please note that light and dark themes are supported; just append '@dark' or '@light' to the icons name and the correct icon will be picked at run-time. For example, write for this property 'icon.png' and have in the assets folder the 'icon@light.png' and 'icon@dark.png' assets.",
 						)
 						.optional(),
 					name: z
@@ -429,7 +429,7 @@ export default z.object({
 						.min(2)
 						.max(255)
 						.describe(
-							"The tool title will be displayed in the Store, Preferences, and any other places the tool might be referenced in the Vicinae UI.",
+							"The tool title will be displayed in the Store, Preferences, and any other places the tool might be referenced in the Seron UI.",
 						),
 					keywords: z.any().optional(),
 					description: z
@@ -449,7 +449,7 @@ export default z.object({
 					preferences: z
 						.array(preferenceSchema)
 						.describe(
-							'Tools can optionally contribute preferences that are shown in Vicinae Preferences > Extensions when selecting the AI Extension item. You can use preferences for configuration values and passwords or personal access tokens. Tools automatically "inherit" extension preferences and can also override entries with the same `name`.',
+							'Tools can optionally contribute preferences that are shown in Seron Preferences > Extensions when selecting the AI Extension item. You can use preferences for configuration values and passwords or personal access tokens. Tools automatically "inherit" extension preferences and can also override entries with the same `name`.',
 						)
 						.optional(),
 				})
@@ -476,7 +476,7 @@ export default z.object({
 						usedAsExample: z
 							.boolean()
 							.describe(
-								"Whether the eval can be used as an example in Vicinae (default `true`)",
+								"Whether the eval can be used as an example in Seron (default `true`)",
 							)
 							.optional(),
 					}),
@@ -502,7 +502,7 @@ export default z.object({
 	preferences: z
 		.array(preferenceSchema)
 		.describe(
-			"Extensions can contribute preferences that are shown in Vicinae Preferences > Extensions. You can use preferences for configuration values and passwords or personal access tokens.",
+			"Extensions can contribute preferences that are shown in Seron Preferences > Extensions. You can use preferences for configuration values and passwords or personal access tokens.",
 		)
 		.optional(),
 	categories: z
@@ -554,9 +554,9 @@ export default z.object({
 		.optional(),
 	dependencies: z
 		.object({
-			"@vicinae/api": z
+			"@seron/api": z
 				.string()
-				.describe("The Vicinae API version used by this extension.")
+				.describe("The Seron API version used by this extension.")
 				.optional(),
 		})
 		.describe(

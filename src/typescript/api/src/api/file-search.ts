@@ -1,16 +1,16 @@
 import { getClient } from "./client";
 import type * as api from "./proto/api";
 /**
- * Access Vicinae's built-in file search functionality.
+ * Access Seron's built-in file search functionality.
  *
  * @remarks
  * This API provides read-only access to the file search system.
- * Use this to find existing files indexed by Vicinae.
+ * Use this to find existing files indexed by Seron.
  * This does **not** provide indexing capabilities.
  *
  * @example
  * ```typescript
- * import { FileSearch } from '@vicinae/api';
+ * import { FileSearch } from '@seron/api';
  *
  * const results = await FileSearch.search('invoice');
  * console.log(`Found ${results.length} files`);

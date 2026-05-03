@@ -11,7 +11,7 @@ import { Metadata } from "./metadata";
  *
  * @example
  * ```typescript
- * import { Detail } from '@vicinae/api';
+ * import { Detail } from '@seron/api';
  *
  * export default function MyCommand() {
  *  return <Detail markdown={'# Hello world!'} />;

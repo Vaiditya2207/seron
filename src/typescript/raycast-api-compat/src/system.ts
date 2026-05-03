@@ -1,5 +1,5 @@
 import { PathLike } from 'fs';
-import * as vicinae from '@vicinae/api';
+import * as seron from '@seron/api';
 
 export type RaycastApplication = {
 	name: string;
@@ -9,7 +9,7 @@ export type RaycastApplication = {
 	windowsAppId: string;
 };
 
-export const transformApp = (app: vicinae.Application): RaycastApplication => {
+export const transformApp = (app: seron.Application): RaycastApplication => {
 	return {
 		bundleId: app.id,
 		name: app.name,
@@ -20,18 +20,18 @@ export const transformApp = (app: vicinae.Application): RaycastApplication => {
 };
 
 export const getApplications = async (path?: PathLike): Promise<RaycastApplication[]> => {
-	const apps = await vicinae.getApplications(path?.toString());
+	const apps = await seron.getApplications(path?.toString());
 
 	return apps.map<RaycastApplication>(transformApp);
 }
 
 export const getDefaultApplication = async (path: PathLike): Promise<RaycastApplication> => {
-	return transformApp(await vicinae.getDefaultApplication(path.toString()));
+	return transformApp(await seron.getDefaultApplication(path.toString()));
 }
 
 
 export const getFrontmostApplication = async (): Promise<RaycastApplication> => {
-  return transformApp(await vicinae.getFrontmostApplication());
+  return transformApp(await seron.getFrontmostApplication());
 };
 
 export const captureException = (exception: unknown): void => {
@@ -40,7 +40,7 @@ export const captureException = (exception: unknown): void => {
 };
 
 export const showInFinder = (path: PathLike) =>
-	vicinae.showInFileBrowser(path, { select: true });
+	seron.showInFileBrowser(path, { select: true });
 
 export const getSelectedFinderItems = async (): Promise<{ path: string }[]> => {
 	throw new Error('getSelectedFinderItems is not implemented');

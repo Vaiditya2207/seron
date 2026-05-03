@@ -48,7 +48,7 @@ export const showHUD = async (
 };
 
 /**
- * Close the vicinae launcher window immediately.
+ * Close the seron launcher window immediately.
  * It is possible to override the `popToRoot` behavior defined in the settings using the options object.
  *
  * @category Launcher Window

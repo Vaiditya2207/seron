@@ -19,7 +19,7 @@ export default class Build extends Command {
 			aliases: ["output"],
 			char: "o",
 			description:
-				"Path to output the compiled extension bundle to. Defaults to Vicinae extension directory.",
+				"Path to output the compiled extension bundle to. Defaults to Seron extension directory.",
 			required: false,
 		}),
 		src: Flags.string({
@@ -93,7 +93,7 @@ export default class Build extends Command {
 				return esbuild.build({
 					bundle: true,
 					entryPoints: [source],
-					external: ["react", "@vicinae/api", "@raycast/api"],
+					external: ["react", "@seron/api", "@raycast/api"],
 					format: "cjs",
 					outdir: outDir,
 					platform: "node",

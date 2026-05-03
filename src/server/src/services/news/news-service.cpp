@@ -56,7 +56,7 @@ std::vector<const NewsItem *> NewsService::activeItems() const {
   std::vector<const NewsItem *> result;
   for (const auto &item : m_items) {
     if (isDismissed(item.id)) continue;
-    if (item.id == "telemetry-notice-v1" && !cfg.telemetry.systemInfo) continue;
+    if (item.id == "telemetry-notice-v1") continue;
     result.emplace_back(&item);
   }
   return result;
@@ -92,25 +92,6 @@ void NewsService::saveState() const {
 
 std::vector<NewsItem> NewsService::allItems() {
   std::vector<NewsItem> items;
-
-  items.push_back({
-      .id = "telemetry-notice-v1",
-      .title = QStringLiteral("Telemetry"),
-      .subtitle = QStringLiteral("We now collect basic usage statistics on startup"),
-      .icon = ImageURL{BuiltinIcon::Megaphone}.setBackgroundTint(SemanticColor::Yellow),
-      .actionFactory =
-          [](ApplicationContext *) {
-            auto panel = std::make_unique<ActionPanelState>();
-            auto *section = panel->createSection();
-
-            auto *openDocs = new OpenInBrowserAction(QUrl(Omnicast::DOC_TELEMETRY_URL), "Learn more");
-            auto *proxy = new AutoDismissProxy(openDocs, "telemetry-notice-v1");
-            proxy->setPrimary(true);
-            section->addAction(proxy);
-
-            return panel;
-          },
-  });
 
   return items;
 }

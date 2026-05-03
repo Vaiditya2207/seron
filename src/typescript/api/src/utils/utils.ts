@@ -16,11 +16,11 @@ const platformDataDir = () => {
 	return path.join(os.homedir(), ".data");
 };
 
-export const dataDir = () => path.join(platformDataDir(), "vicinae");
+export const dataDir = () => path.join(platformDataDir(), "seron");
 
 export const extensionDataDir = () => path.join(dataDir(), "extensions");
 
 export const supportDir = path.join(dataDir(), "support");
 
 export const extensionInternalSupportDir = (id: string) =>
-	path.join(supportDir, id, ".vicinae");
+	path.join(supportDir, id, ".seron");

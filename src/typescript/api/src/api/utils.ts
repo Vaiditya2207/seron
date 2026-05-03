@@ -18,7 +18,7 @@ export const trash = async (path: PathLike | PathLike[]): Promise<void> => {
  * Additional options that can be passed in order to tweak the behavior of the terminal window.
  * Note that most options are best-effort, which means that they may or may not work depending on
  * the default terminal emulator that is available.
- * On Linux, Vicinae honors the xdg-terminal-exec specification: https://gitlab.freedesktop.org/terminal-wg/specifications/-/merge_requests/3/diffs
+ * On Linux, Seron honors the xdg-terminal-exec specification: https://gitlab.freedesktop.org/terminal-wg/specifications/-/merge_requests/3/diffs
  *
  * @category System
  */
@@ -71,7 +71,7 @@ export type ShowInFileBrowserOptions = {
  *
  * @example
  * ```typescript
- * await runInTerminal(['journalctl', '--user', '-u', '-f', 'vicinae']);
+ * await runInTerminal(['journalctl', '--user', '-u', '-f', 'seron']);
  * // or, inside a shell:
  * await runInTerminal(['/bin/bash', '-c', 'echo "dis is my home: $HOME"'], { hold: true });
  * ```
