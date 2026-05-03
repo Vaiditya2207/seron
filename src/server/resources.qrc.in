@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/bin">
+  	<file alias="extension-manager">@CMAKE_BINARY_DIR@/extension-runtime.js</file>
+  </qresource>
+  <qresource>
+  	<file alias="config.jsonc">@EXTRA_DIR@/config.jsonc</file>
+  </qresource>
+  <qresource prefix="/fonts">
+  	<file alias="InterVariable.ttf">@ASSET_PATH@/fonts/InterVariable.ttf</file>
+  </qresource>
+</RCC>

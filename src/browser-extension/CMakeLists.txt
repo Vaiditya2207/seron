@@ -1,0 +1,47 @@
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(TARGET seron-browser-link)
+set(CHROME_EXTENSION_ID "kcmipingpfbohfjckomimmahknoddnke") # https://chromewebstore.google.com/detail/seron-integration/kcmipingpfbohfjckomimmahknoddnke
+set(NATIVE_MESSAGING_HOST "com.seron.seron")
+set(NATIVE_HOST_BIN ${SERON_LIBEXEC_PATH}/${TARGET})
+
+option(INSTALL_BROWSER_NATIVE_HOST "Install native host manifests for firefox and chromium" ON)
+
+include("Figura")
+
+set(FIGURA_DIR "${CMAKE_SOURCE_DIR}/figura")
+
+figura_compile(
+	CLIENT
+	PROTO "${FIGURA_DIR}/ipc.fig"
+	LANG glaze
+	NAMESPACE ipc
+	OUTPUT browser-ipc-client.hpp
+)
+
+add_executable(${TARGET} src/browser.cpp ${SRCS})
+target_include_directories(${TARGET} PRIVATE ${GENOUT})
+target_compile_features(${TARGET} PUBLIC cxx_std_23)
+target_compile_definitions(${TARGET} PUBLIC NATIVE_MESSAGING_HOST="${NATIVE_MESSAGING_HOST}")
+target_link_libraries(${TARGET} PUBLIC glaze::glaze)
+
+if (INSTALL_BROWSER_NATIVE_HOST)
+	configure_file(native-host/${NATIVE_MESSAGING_HOST}.chromium.json.in ${NATIVE_MESSAGING_HOST}.chromium.json)
+	set(NATIVE_HOST_PATH "/etc/chromium/native-messaging-hosts")
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NATIVE_MESSAGING_HOST}.chromium.json DESTINATION ${NATIVE_HOST_PATH} RENAME ${NATIVE_MESSAGING_HOST}.json)
+endif()
+
+if (INSTALL_BROWSER_NATIVE_HOST)
+	configure_file(native-host/${NATIVE_MESSAGING_HOST}.firefox.json.in ${NATIVE_MESSAGING_HOST}.firefox.json)
+	set(NATIVE_HOST_PATH "/usr/lib/mozilla/native-messaging-hosts")
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NATIVE_MESSAGING_HOST}.firefox.json DESTINATION ${NATIVE_HOST_PATH} RENAME ${NATIVE_MESSAGING_HOST}.json)
+endif()
+
+install(FILES
+	native-host/${NATIVE_MESSAGING_HOST}.chromium.json.in
+	native-host/${NATIVE_MESSAGING_HOST}.firefox.json.in
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/seron/native-messaging-hosts
+)
+
+install(TARGETS ${TARGET}
+	RUNTIME DESTINATION ${SERON_LIBEXEC_DIR}
+)

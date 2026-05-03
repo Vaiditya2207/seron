@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.16)
+set(PROJECT_NAME seron-common)
+project(${PROJECT_NAME})
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_library(${PROJECT_NAME} STATIC src/common.cpp)
+add_library(seron::common ALIAS ${PROJECT_NAME})
+target_include_directories(${PROJECT_NAME} PUBLIC include PRIVATE src)
+target_compile_definitions(${PROJECT_NAME} PRIVATE SERON_LIBEXECDIR="${SERON_LIBEXEC_DIR}" SERON_LIBEXEC_PATH="${SERON_LIBEXEC_PATH}")
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)

@@ -1,0 +1,119 @@
+#include "search-files-view-host.hpp"
+#include "service-registry.hpp"
+#include "services/files-service/file-service.hpp"
+#include "utils/utils.hpp"
+#include "view-utils.hpp"
+#include <QFileInfo>
+#include <ranges>
+
+namespace fs = std::filesystem;
+
+QUrl SearchFilesViewHost::qmlComponentUrl() const {
+  return QUrl(QStringLiteral("qrc:/Seron/SearchFilesView.qml"));
+}
+
+QVariantMap SearchFilesViewHost::qmlProperties() {
+  return {{QStringLiteral("host"), QVariant::fromValue(this)}};
+}
+
+void SearchFilesViewHost::initialize() {
+  using namespace std::chrono_literals;
+  BaseView::initialize();
+  initModel();
+
+  m_section.setOnFileSelected([this](const fs::path &p) { loadDetail(p); });
+  model()->addSource(&m_section);
+
+  setSearchPlaceholderText("Search for files...");
+
+  m_debounce.setSingleShot(true);
+  m_debounce.setInterval(100ms);
+  connect(&m_debounce, &QTimer::timeout, this, &SearchFilesViewHost::handleDebounce);
+  connect(&m_pendingResults, &Watcher::finished, this, &SearchFilesViewHost::handleSearchResults);
+}
+
+void SearchFilesViewHost::loadInitialData() { renderRecentFiles(); }
+
+void SearchFilesViewHost::textChanged(const QString &text) {
+  if (m_pendingResults.isRunning()) m_pendingResults.cancel();
+
+  if (text.isEmpty()) {
+    m_debounce.stop();
+    renderRecentFiles();
+    return;
+  }
+
+  std::error_code ec;
+  auto path = expandPath(text.trimmed().toStdString());
+  if (path != "/" && fs::exists(path, ec)) {
+    setLoading(false);
+    m_section.setFiles({path}, QStringLiteral("Direct file path"));
+    return;
+  }
+
+  setLoading(true);
+  m_debounce.start();
+}
+
+void SearchFilesViewHost::renderRecentFiles() {
+  auto fileService = context()->services->fileService();
+
+  setLoading(false);
+  auto recentFiles = fileService->getRecentlyAccessed() |
+                     std::views::transform([](auto &&f) { return f.path; }) | std::ranges::to<std::vector>();
+  m_section.setFiles(std::move(recentFiles), QStringLiteral("Recently Accessed"));
+}
+
+void SearchFilesViewHost::handleDebounce() {
+  auto fileService = context()->services->fileService();
+  QString const query = searchText();
+
+  if (m_pendingResults.isRunning()) m_pendingResults.cancel();
+
+  if (query.isEmpty()) {
+    setLoading(false);
+    return;
+  }
+
+  m_lastSearchText = query;
+  m_pendingResults.setFuture(fileService->queryAsync(query.toStdString()));
+}
+
+void SearchFilesViewHost::handleSearchResults() {
+  setLoading(false);
+
+  if (!m_pendingResults.isFinished() || m_pendingResults.isCanceled()) return;
+  if (searchText() != m_lastSearchText) return;
+
+  auto results = m_pendingResults.result();
+  auto paths =
+      results | std::views::transform([](auto &&f) { return f.path; }) | std::ranges::to<std::vector>();
+  m_section.setFiles(std::move(paths), QStringLiteral("Results"));
+}
+
+void SearchFilesViewHost::loadDetail(const fs::path &path) {
+  m_hasDetail = true;
+  m_detailName = QString::fromStdString(getLastPathComponent(path));
+  m_detailPath = QString::fromStdString(compressPath(path).string());
+
+  QFileInfo const info(QString::fromStdString(path.string()));
+  m_detailLastModified = info.lastModified().toString();
+
+  auto preview = qml::resolveFilePreview(path, m_mimeDb);
+  m_detailMimeType = preview.mimeType;
+  m_detailImageSource = preview.imageSource;
+  m_detailTextContent = preview.textContent;
+
+  emit detailChanged();
+}
+
+void SearchFilesViewHost::clearDetail() {
+  m_hasDetail = false;
+  m_detailName.clear();
+  m_detailPath.clear();
+  m_detailMimeType.clear();
+  m_detailLastModified.clear();
+  m_detailImageSource.clear();
+  m_detailTextContent.clear();
+  emit detailChanged();
+}

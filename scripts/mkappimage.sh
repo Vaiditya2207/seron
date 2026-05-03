@@ -1,0 +1,30 @@
+#! /bin/bash
+
+# This is meant to be run from a built seron source tree, inside
+# the ubuntu-22.04 based build environment.
+
+function die() {
+	echo $1
+	exit 1
+}
+
+[ $# -ne 2 ] && die "Usage: $0 <install_dir> <app_dir>"
+
+APPDIR=$2
+
+rm -rf $APPDIR
+mkdir -p $APPDIR/usr
+cp -r $1/* $APPDIR/usr
+
+cp $(which node) ${APPDIR}/usr/bin/node
+cp extra/seron.png ${APPDIR}
+cp extra/seron.desktop ${APPDIR}
+
+# https://github.com/linuxdeploy/linuxdeploy-plugin-qt/issues/57
+cp /usr/lib/x86_64-linux-gnu/libssl.so* ${APPDIR}/usr/lib/
+
+export QML_SOURCES_PATHS=$PWD/src/server/src/qml/qml
+export EXTRA_PLATFORM_PLUGINS=libqwayland.so
+export EXTRA_QT_PLUGINS=waylandcompositor
+
+linuxdeploy --appdir $APPDIR --executable $APPDIR/usr/bin/seron --executable $APPDIR/usr/libexec/seron/seron-server --plugin qt --output appimage

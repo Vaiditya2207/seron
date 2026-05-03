@@ -1,0 +1,326 @@
+#include "config/config.hpp"
+#include "environment.hpp"
+#include <QStyleHints>
+#include "extension/extension.hpp"
+#include "root-search/browser-tabs/browser-tabs-provider.hpp"
+#include "root-search/scripts/script-root-provider.hpp"
+#include "extension/manager/extension-manager.hpp"
+#include "favicon/favicon-service.hpp"
+#include "font-service.hpp"
+#include "icon-theme-db/icon-theme-db.hpp"
+#include "ipc-command-server.hpp"
+#include "keyboard/keybind-manager.hpp"
+#include "log/message-handler.hpp"
+#include "overlay-controller/overlay-controller.hpp"
+#include "extensions/root/root-command.hpp"
+#include "root-search/apps/app-root-provider.hpp"
+#include "root-search/extensions/extension-root-provider.hpp"
+#include "root-search/shortcuts/shortcut-root-provider.hpp"
+#include "service-registry.hpp"
+#include "services/background-effect/background-effect-manager.hpp"
+#include "services/file-chooser/file-chooser-service.hpp"
+#include "services/browser-extension-service.hpp"
+#include "services/calculator-service/calculator-service.hpp"
+#include "services/clipboard/clipboard-service.hpp"
+#include "services/emoji-service/emoji-service.hpp"
+#include "services/extension-registry/extension-registry.hpp"
+#include "services/files-service/file-service.hpp"
+#include "services/local-storage/local-storage-service.hpp"
+#include "services/oauth/oauth-service.hpp"
+#include "services/power-manager/power-manager.hpp"
+#include "services/raycast/raycast-store.hpp"
+#include "services/extension-store/seron-store.hpp"
+#include "services/script-command/script-command-service.hpp"
+#include "services/shortcut/shortcut-service.hpp"
+#include "services/news/news-service.hpp"
+#include "services/telemetry/telemetry-service.hpp"
+#include "services/toast/toast-service.hpp"
+#include "services/window-manager/window-manager.hpp"
+#include "services/snippet/snippet-service.hpp"
+#include "services/paste/paste-service.hpp"
+#include "services/paste/linux-paste-service.hpp"
+#include "settings-controller/settings-controller.hpp"
+#include "qml/launcher-window.hpp"
+#include "utils.hpp"
+#include "seron.hpp"
+#include <filesystem>
+#include <QGuiApplication>
+#include <QQuickWindow>
+#include <QString>
+#include <qlockfile.h>
+#include <qlogging.h>
+#include <QtQuickControls2/QQuickStyle>
+#include "server.hpp"
+
+static void applyTextRenderingMode(const config::FontConfig &fontConfig) {
+  if (fontConfig.rendering == "qt") {
+    QQuickWindow::setTextRenderType(QQuickWindow::QtTextRendering);
+  } else {
+    QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
+  }
+}
+
+int startServer(const ServerLaunchOptions &launchOpts) {
+  qInstallMessageHandler(coloredMessageHandler);
+
+  auto m_config = launchOpts.config.empty() ? Omnicast::configDir() / "settings.json"
+                                            : std::filesystem::path{launchOpts.config};
+
+  if (!qEnvironmentVariableIsSet("QT_QUICK_FLICKABLE_WHEEL_DECELERATION"))
+    qputenv("QT_QUICK_FLICKABLE_WHEEL_DECELERATION", "10000");
+
+  int argc = 1;
+  static char *argv[] = {strdup("command"), nullptr};
+  QGuiApplication const qapp(argc, argv);
+  QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
+
+  if (const auto launcher = Environment::detectAppLauncher()) {
+    qInfo() << "Detected launch prefix:" << *launcher;
+  }
+
+  QQuickStyle::setStyle(QStringLiteral("Basic"));
+
+  Omnicast::ensureDirectories();
+
+  {
+    auto registry = ServiceRegistry::instance();
+    auto omniDb = std::make_unique<OmniDatabase>(Omnicast::dataDir() / "seron.db");
+    auto localStorage = std::make_unique<LocalStorageService>(*omniDb);
+    auto extensionManager = std::make_unique<ExtensionManager>();
+    auto windowManager = std::make_unique<WindowManager>();
+    auto appService = std::make_unique<AppService>(*omniDb.get());
+    auto snippetService = std::make_unique<SnippetService>(Omnicast::dataDir() / "snippets" / "snippets.json",
+                                                           *windowManager, *appService);
+    auto clipboardManager = std::make_unique<ClipboardService>(Omnicast::dataDir() / "clipboard.db");
+    auto linuxPaste = std::make_unique<LinuxPasteService>();
+    auto pasteService =
+        std::make_unique<PasteService>(*clipboardManager, *windowManager, *appService, std::move(linuxPaste));
+    auto fontService = std::make_unique<FontService>();
+    auto configService = std::make_unique<config::Manager>(m_config);
+    auto rootItemManager = std::make_unique<RootItemManager>(*configService, *localStorage);
+    auto shortcutService =
+        std::make_unique<ShortcutService>(Omnicast::dataDir() / "shortcuts" / "shortcuts.json", omniDb.get());
+    auto toastService = std::make_unique<ToastService>();
+    auto currentConfig = configService->value();
+    auto emojiService = std::make_unique<EmojiService>(*omniDb.get());
+    auto calculatorService = std::make_unique<CalculatorService>(*omniDb.get());
+    auto fileService = std::make_unique<FileService>(*omniDb);
+    auto oauthService = std::make_unique<OAuthService>(*omniDb);
+    auto extensionRegistry = std::make_unique<ExtensionRegistry>(*localStorage);
+    auto raycastStore = std::make_unique<RaycastStoreService>();
+    auto seronStore = std::make_unique<SeronStoreService>();
+
+#ifdef HAS_TYPESCRIPT_EXTENSIONS
+    if (!launchOpts.noExtensionRuntime) {
+      if (!extensionManager->start()) {
+        qCritical() << "Failed to load extension manager. Extensions will not work";
+      }
+    } else {
+      qWarning() << "--no-extension-runtime flag was passed, third-party Typescript extensions will not run.";
+    }
+#else
+    qInfo() << "Not starting extension manager has support for typescript extensions has been disabled for "
+               "this build.";
+#endif
+
+    registry->setFileService(std::move(fileService));
+    registry->setToastService(std::move(toastService));
+    registry->setShortcutService(std::move(shortcutService));
+    registry->setConfig(std::move(configService));
+    registry->setRootItemManager(std::move(rootItemManager));
+    registry->setCalculatorService(std::move(calculatorService));
+    registry->setAppDb(std::move(appService));
+    registry->setOmniDb(std::move(omniDb));
+    registry->setLocalStorage(std::move(localStorage));
+    registry->setExtensionManager(std::move(extensionManager));
+    registry->setClipman(std::move(clipboardManager));
+    registry->setPasteService(std::move(pasteService));
+    registry->setSnippetService(std::move(snippetService));
+    registry->setWindowManager(std::move(windowManager));
+    registry->setFontService(std::move(fontService));
+    registry->setEmojiService(std::move(emojiService));
+    registry->setRaycastStore(std::move(raycastStore));
+    registry->setSeronStore(std::move(seronStore));
+    registry->setExtensionRegistry(std::move(extensionRegistry));
+    registry->setOAuthService(std::move(oauthService));
+    registry->setPowerManager(std::make_unique<PowerManager>());
+    registry->setScriptDb(std::make_unique<ScriptCommandService>());
+    registry->setBrowserExtension(std::make_unique<BrowserExtensionService>());
+    registry->setBackgroundEffectManager(std::make_unique<BackgroundEffectManager>());
+    registry->setFileChooserService(std::make_unique<FileChooserService>());
+    registry->setNewsService(std::make_unique<NewsService>(*registry->config()));
+    registry->setTelemetry(std::make_unique<TelemetryService>(*registry->config()));
+
+    auto root = registry->rootItemManager();
+    auto builtinCommandDb = std::make_unique<CommandDatabase>();
+
+    for (const auto &repo : builtinCommandDb->repositories()) {
+      root->loadProvider(std::make_unique<ExtensionRootProvider>(repo));
+    }
+
+    auto reg = ServiceRegistry::instance()->extensionRegistry();
+
+    QObject::connect(reg, &ExtensionRegistry::extensionsChanged, [reg]() {
+      auto reg = ServiceRegistry::instance()->extensionRegistry();
+      auto root = ServiceRegistry::instance()->rootItemManager();
+      std::set<QString> scanned;
+
+      for (const auto &manifest : reg->scanAll()) {
+        auto extension = std::make_unique<ExtensionRootProvider>(std::make_shared<Extension>(manifest));
+
+        scanned.insert(extension->repositoryId());
+        root->loadProvider(std::move(extension));
+      }
+
+      std::vector<QString> removed;
+
+      for (const auto &provider : root->providers()) {
+        if (auto extp = dynamic_cast<ExtensionRootProvider *>(provider)) {
+          if (!extp->isBuiltin() && !scanned.contains(extp->uniqueId())) {
+            removed.emplace_back(extp->uniqueId());
+          }
+        }
+      }
+
+      for (const auto &id : removed) {
+        root->uninstallProvider(id);
+      }
+
+      root->updateIndex();
+    });
+
+    for (const auto &manifest : reg->scanAll()) {
+      auto extension = std::make_shared<Extension>(manifest);
+
+      root->loadProvider(std::make_unique<ExtensionRootProvider>(extension));
+    }
+
+    // this one needs to be set last
+
+    root->loadProvider(std::make_unique<AppRootProvider>(*registry->appDb()));
+    root->loadProvider(std::make_unique<ShortcutRootProvider>(*registry->shortcuts()));
+    root->loadProvider(std::make_unique<ScriptRootProvider>(*registry->scriptDb()));
+    root->loadProvider(std::make_unique<BrowserTabProvider>(*registry->browserExtension()));
+
+    // Force reload providers to make sure items that depend on them are shown
+    root->updateIndex();
+  }
+
+  FaviconService::initialize(new FaviconService(Omnicast::dataDir() / "favicon"));
+  QGuiApplication::setApplicationName("seron");
+  QGuiApplication::setQuitOnLastWindowClosed(false);
+  ApplicationContext ctx;
+
+  ctx.navigation = std::make_unique<NavigationController>(ctx);
+  ctx.overlay = std::make_unique<OverlayController>(&ctx);
+  ctx.settings = std::make_unique<SettingsController>(ctx);
+  ctx.services = ServiceRegistry::instance();
+
+  IpcCommandServer commandServer(&ctx);
+
+  commandServer.start(Omnicast::commandSocketPath());
+
+#ifdef ENABLE_PREVIEW_FEATURES
+  ctx.services->snippetService()->start();
+#endif
+
+  auto configChanged = [&](const config::ConfigValue &next, const config::ConfigValue &prev) {
+    auto &theme = ThemeService::instance();
+    auto &nextTheme = next.systemTheme();
+    auto &prevTheme = prev.systemTheme();
+    bool const themeChangeRequired = nextTheme.name != prevTheme.name;
+
+    IconThemeDatabase const iconThemeDb;
+
+    applyTextRenderingMode(next.font);
+
+    theme.setFontBasePointSize(next.font.normal.size);
+
+    bool const fontChanged =
+        next.font.normal.size != prev.font.normal.size || next.font.normal.family != prev.font.normal.family;
+
+    if (fontChanged) {
+      auto &family = next.font.normal.family;
+      QFont font;
+      if (family == "auto") {
+        auto builtin = ServiceRegistry::instance()->fontService()->builtinFontFamily();
+        if (!builtin.isEmpty()) font.setFamily(builtin);
+      } else if (family != "system") {
+        font.setFamily(QString::fromStdString(family));
+      }
+      font.setPointSizeF(next.font.normal.size);
+      QGuiApplication::setFont(font);
+    }
+
+    if (themeChangeRequired) {
+      theme.setTheme(nextTheme.name.c_str());
+    } else if (fontChanged) {
+      theme.reloadCurrentTheme();
+    }
+
+    ctx.navigation->setPopToRootOnClose(next.popToRootOnClose);
+    ctx.navigation->setCloseOnFocusLoss(next.closeOnFocusLoss);
+
+    KeybindManager::instance()->mergeBinds({next.keybinds.begin(), next.keybinds.end()});
+    FaviconService::instance()->setService(next.faviconService.c_str());
+
+    if (nextTheme.iconTheme != "auto") {
+      QIcon::setThemeName(nextTheme.iconTheme.c_str());
+    } else if (QIcon::themeName() == "hicolor") {
+      QIcon::setThemeName(iconThemeDb.guessBestTheme());
+    }
+
+    ServiceRegistry::instance()->telemetry()->setEnabled(next.telemetry.systemInfo);
+  };
+
+  auto cfgService = ServiceRegistry::instance()->config();
+
+  QObject::connect(cfgService, &config::Manager::configLoadingError, [&ctx](std::string_view message) {
+    ctx.navigation->confirmAlert("Failed to load config", qStringFromStdView(message), []() {});
+  });
+
+  QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, [&]() {
+    IconThemeDatabase const iconThemeDb;
+    auto &value = cfgService->value();
+    auto &theme = value.systemTheme();
+
+    if (theme.iconTheme != "auto") {
+      QIcon::setThemeName(theme.iconTheme.c_str());
+    } else if (QIcon::themeName() == "hicolor") {
+      QIcon::setThemeName(iconThemeDb.guessBestTheme());
+    }
+
+    ThemeService::instance().setTheme(theme.name.c_str());
+  });
+
+  QObject::connect(
+      KeybindManager::instance(), &KeybindManager::keybindChanged,
+      [cfgService](Keybind, const Keyboard::Shortcut &shortcut) {
+        auto info = KeybindManager::instance()->findBoundInfo(shortcut);
+        cfgService->mergeWithUser(
+            {.keybinds = config::KeybindMap{{info->id.toStdString(), shortcut.toString().toStdString()}}});
+      });
+
+  QObject::connect(cfgService, &config::Manager::configChanged, configChanged);
+  QIcon::setFallbackSearchPaths(Environment::fallbackIconSearchPaths());
+
+  auto builtinFont = ServiceRegistry::instance()->fontService()->builtinFontFamily();
+  if (!builtinFont.isEmpty()) QGuiApplication::setFont(QFont(builtinFont));
+
+  configChanged(cfgService->value(), {});
+
+  ctx.navigation->launch(std::make_shared<RootCommand>());
+
+  LauncherWindow const qmlWindow(ctx);
+
+  if (launchOpts.open) {
+    ctx.navigation->showWindow();
+  } else {
+    qInfo() << "Seron server successfully started. Call \"seron toggle\" to toggle the window";
+  }
+
+  auto ret = qApp->exec();
+  ctx.services->clipman()->clipboardServer()->stop();
+  ctx.services->extensionManager()->stop();
+  return ret;
+}

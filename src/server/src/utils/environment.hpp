@@ -1,0 +1,166 @@
+#pragma once
+#include "xdgpp/env/env.hpp"
+#include <QString>
+#include <QGuiApplication>
+#include <QProcess>
+#include <QProcessEnvironment>
+#include <QStandardPaths>
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <qtenvironmentvariables.h>
+
+namespace Environment {
+
+inline bool isGnomeEnvironment() {
+  const QString desktop = qgetenv("XDG_CURRENT_DESKTOP");
+  const QString session = qgetenv("GDMSESSION");
+  return desktop.contains("GNOME", Qt::CaseInsensitive) || session.contains("gnome", Qt::CaseInsensitive);
+}
+
+inline bool isWaylandSession() { return QGuiApplication::platformName() == "wayland"; }
+
+inline bool supportsArbitraryWindowPlacement() { return !isWaylandSession(); }
+
+/**
+ * Detects if running in wlroots-based compositor (Hyprland, Sway, etc.)
+ */
+inline bool isWlrootsCompositor() {
+  const QString desktop = qgetenv("XDG_CURRENT_DESKTOP");
+  return desktop.contains("Hyprland", Qt::CaseInsensitive) || desktop.contains("sway", Qt::CaseInsensitive) ||
+         desktop.contains("river", Qt::CaseInsensitive);
+}
+
+static inline bool containsIgnoreCase(const std::vector<std::string> &desktops, std::string_view str) {
+  return std::ranges::any_of(desktops, [&](auto &desktop) {
+    return std::ranges::equal(desktop, str, [](auto &&a, auto &&b) {
+      return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+    });
+  });
+}
+
+inline bool isCosmicDesktop() { return containsIgnoreCase(xdgpp::currentDesktop(), "cosmic"); }
+inline bool isNiriCompositor() { return containsIgnoreCase(xdgpp::currentDesktop(), "niri"); }
+inline bool isHyprlandCompositor() { return containsIgnoreCase(xdgpp::currentDesktop(), "Hyprland"); }
+inline bool isPlasmaDesktop() { return containsIgnoreCase(xdgpp::currentDesktop(), "kde"); }
+inline bool isWaylandPlasmaDesktop() { return isWaylandSession() && isPlasmaDesktop(); }
+inline bool isGnomeDesktop() { return containsIgnoreCase(xdgpp::currentDesktop(), "gnome"); }
+
+// used mostly to exclude cosmic which's implementation is currently broken
+inline bool isLayerShellSupported() {
+#ifndef WAYLAND_LAYER_SHELL
+  return false;
+#endif
+  return isWaylandSession() && !isCosmicDesktop() && !isGnomeEnvironment();
+}
+
+inline bool isHudDisabled() { return !isLayerShellSupported(); }
+
+/**
+ * App image directory if we are running in an appimage.
+ * We typically use this in order to find the bundled
+ * node binary, instead of trying to launch the system one.
+ */
+inline std::optional<std::filesystem::path> appImageDir() {
+  if (auto appdir = getenv("APPDIR")) return appdir;
+  return std::nullopt;
+}
+
+/**
+ * Optional override of the `node` executable to use to spawn the
+ * extension manager.
+ */
+inline std::optional<std::filesystem::path> nodeBinaryOverride() {
+  if (auto bin = getenv("SERON_NODE_BIN")) return bin;
+  return std::nullopt;
+}
+
+inline bool isAppImage() { return appImageDir().has_value(); }
+
+inline QStringList fallbackIconSearchPaths() {
+  QStringList list;
+  auto dirs = xdgpp::dataDirs();
+
+  list.reserve(dirs.size() * 2);
+
+  for (const auto &dir : dirs) {
+    list << (dir / "pixmaps").c_str();
+  }
+
+  for (const auto &dir : dirs) {
+    list << (dir / "icons").c_str();
+  }
+
+  return list;
+}
+
+inline QString seronApiBaseUrl() {
+  if (const char *url = getenv("SERON_API_URL")) { return url; }
+  return "https://api.seron.com/v1";
+}
+
+/**
+ * Gets human-readable environment description
+ */
+inline QString getEnvironmentDescription() {
+  QString desc;
+  const QString desktop = qgetenv("XDG_CURRENT_DESKTOP");
+
+  if (!desktop.isEmpty()) {
+    desc = desktop;
+  } else if (isGnomeEnvironment()) {
+    desc = "GNOME";
+  } else if (isWlrootsCompositor()) {
+    desc = "wlroots";
+  }
+
+  if (isWaylandSession()) {
+    desc += "/Wayland";
+  } else {
+    desc += "/X11";
+  }
+
+  return desc;
+}
+
+inline std::string chassisType() {
+  std::ifstream file("/sys/class/dmi/id/chassis_type");
+  if (!file.is_open()) return "unknown";
+
+  int type = 0;
+  file >> type;
+
+  switch (type) {
+  case 3:
+  case 4:
+  case 5:
+  case 6:
+  case 7:
+    return "desktop";
+  case 8:
+  case 9:
+  case 10:
+  case 14:
+  case 11:
+  case 12:
+  case 13:
+  case 30:
+  case 31:
+  case 32:
+    return "laptop";
+  default:
+    return "other";
+  }
+}
+
+inline std::optional<QString> detectAppLauncher() {
+  QProcess proc;
+  proc.start("uwsm", {"check", "is-active"});
+  if (!proc.waitForFinished(1000) || proc.exitCode() != 0) return std::nullopt;
+  if (!QStandardPaths::findExecutable("uwsm-app").isEmpty()) return "uwsm-app --";
+  return "uwsm app --";
+}
+
+} // namespace Environment

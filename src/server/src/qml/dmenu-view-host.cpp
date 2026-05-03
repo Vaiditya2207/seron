@@ -1,0 +1,93 @@
+#include "dmenu-view-host.hpp"
+#include "utils/utils.hpp"
+#include "view-utils.hpp"
+#include <ranges>
+
+namespace fs = std::filesystem;
+
+DMenuViewHost::DMenuViewHost(ipc_gen::DMenuRequest data) : m_data(std::move(data)) {}
+
+QUrl DMenuViewHost::qmlComponentUrl() const {
+  if (m_data.noQuickLook) { return QUrl(QStringLiteral("qrc:/Seron/CommandListView.qml")); }
+  return QUrl(QStringLiteral("qrc:/Seron/DMenuView.qml"));
+}
+
+QVariantMap DMenuViewHost::qmlProperties() {
+  if (m_data.noQuickLook) {
+    return {{QStringLiteral("cmdModel"), QVariant::fromValue(static_cast<QObject *>(model()))}};
+  }
+  return {{QStringLiteral("host"), QVariant::fromValue(this)}};
+}
+
+void DMenuViewHost::initialize() {
+  BaseView::initialize();
+  initModel();
+
+  if (m_data.noQuickLook) m_section.setNoQuickLook(true);
+  if (m_data.noSection) m_section.setNoSection(true);
+  if (m_data.sectionTitle) m_section.setSectionTemplate(*m_data.sectionTitle);
+  if (m_data.noFooter) setStatusBarVisiblity(false);
+
+  setSearchPlaceholderText(m_data.placeholder.value_or("Search entries...").c_str());
+
+  auto entries = std::views::split(m_data.rawContent, std::string_view("\n")) |
+                 std::views::transform([](auto &&s) { return std::string_view(s); }) |
+                 std::views::filter([](auto &&s) { return !s.empty(); }) | std::ranges::to<std::vector>();
+  m_section.setRawEntries(std::move(entries));
+
+  m_section.setOnEntryChosen([this](const QString &text) {
+    m_selected = true;
+    emit selected(text);
+  });
+
+  if (!m_data.noQuickLook) {
+    m_section.setOnFileHighlighted([this](std::string_view path) { loadDetail(path); });
+  }
+
+  model()->addSource(&m_section);
+}
+
+void DMenuViewHost::loadInitialData() {
+  if (m_data.query) {
+    setSearchText(m_data.query.value_or("").c_str());
+  } else {
+    model()->setFilter({});
+  }
+}
+
+void DMenuViewHost::textChanged(const QString &text) {
+  clearDetail();
+  m_section.setCurrentSearchText(text);
+  model()->setFilter(text);
+}
+
+void DMenuViewHost::beforePop() {
+  if (!m_selected) { emit selected(""); }
+}
+
+void DMenuViewHost::loadDetail(std::string_view path) {
+  auto qpath = QString::fromUtf8(path.data(), path.size());
+  auto fspath = fs::path(path);
+
+  m_hasDetail = true;
+  m_detailName = QString::fromStdString(getLastPathComponent(fspath));
+  m_detailPath = qpath;
+
+  auto preview = qml::resolveFilePreview(fspath, m_mimeDb);
+  m_detailMimeType = preview.mimeType;
+  m_detailImageSource = preview.imageSource;
+  m_detailTextContent = preview.textContent;
+
+  emit detailChanged();
+}
+
+void DMenuViewHost::clearDetail() {
+  if (!m_hasDetail) return;
+  m_hasDetail = false;
+  m_detailName.clear();
+  m_detailPath.clear();
+  m_detailMimeType.clear();
+  m_detailImageSource.clear();
+  m_detailTextContent.clear();
+  emit detailChanged();
+}

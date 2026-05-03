@@ -1,0 +1,107 @@
+#include <cstring>
+#include <format>
+#include <print>
+#include <unistd.h>
+#include "linuxutils/keyboard.hpp"
+#include "linux/uinput.h"
+
+namespace linuxutils {
+
+static constexpr const uinput_setup KB_ID = {
+    .id = {.bustype = BUS_VIRTUAL, .vendor = 0x1234, .product = 0x5678, .version = 1},
+    .name = "seron-snippet-virtual-keyboard",
+};
+static constexpr const auto KEY_DELAY_US = 2000;
+
+static void emit(int fd, const input_event &ev) {
+  if (write(fd, &ev, sizeof(ev)) < 0) {
+    std::println(stderr, "UInputKeyboard: write failed: {}", strerror(errno));
+  }
+}
+
+UInputKeyboard::UInputKeyboard() {
+  const int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+
+  if (fd < 0) {
+    m_error = std::format("Failed to open /dev/uinput: {}", strerror(errno));
+    return;
+  }
+
+  ioctl(fd, UI_SET_EVBIT, EV_KEY);
+
+  // KEY_ESC=1 through most keys
+  for (int i = KEY_ESC; i < 256; i++) {
+    ioctl(fd, UI_SET_KEYBIT, i);
+  }
+
+  ioctl(fd, UI_DEV_SETUP, &KB_ID);
+  ioctl(fd, UI_DEV_CREATE);
+  m_fd = fd;
+}
+
+UInputKeyboard::~UInputKeyboard() {
+  ioctl(m_fd, UI_DEV_DESTROY);
+  close(m_fd);
+}
+
+void UInputKeyboard::sendKey(int code, int mods) {
+  applyMods(mods);
+  usleep(KEY_DELAY_US);
+  sendKey(code);
+  usleep(KEY_DELAY_US);
+  sync();
+  usleep(KEY_DELAY_US);
+  clearMods(mods);
+  sync();
+}
+
+void UInputKeyboard::repeatKey(int code, int n) {
+  for (int i = 0; i != n; ++i) {
+    sendKey(code);
+    usleep(KEY_DELAY_US);
+  }
+}
+
+void UInputKeyboard::sync() {
+  struct input_event ev{};
+  ev.type = EV_SYN;
+  ev.code = SYN_REPORT;
+  ev.value = 0;
+  emit(m_fd, ev);
+}
+
+void UInputKeyboard::keyup(int code) {
+  struct input_event ev{};
+  ev.type = EV_KEY;
+  ev.code = code;
+  ev.value = 0;
+  emit(m_fd, ev);
+}
+
+void UInputKeyboard::keydown(int code) {
+  struct input_event ev{};
+  ev.type = EV_KEY;
+  ev.code = code;
+  ev.value = 1;
+  emit(m_fd, ev);
+}
+
+void UInputKeyboard::sendKey(int code) {
+  keydown(code);
+  sync();
+  keyup(code);
+  sync();
+}
+
+void UInputKeyboard::applyMods(int mods) {
+  const auto m = static_cast<Modifier>(mods);
+  if ((m & Modifier::Ctrl) != Modifier::None) { keydown(KEY_LEFTCTRL); }
+  if ((m & Modifier::Shift) != Modifier::None) { keydown(KEY_LEFTSHIFT); }
+}
+
+void UInputKeyboard::clearMods(int mods) {
+  const auto m = static_cast<Modifier>(mods);
+  if ((m & Modifier::Ctrl) != Modifier::None) { keyup(KEY_LEFTCTRL); }
+  if ((m & Modifier::Shift) != Modifier::None) { keyup(KEY_LEFTSHIFT); }
+}
+}; // namespace linuxutils
