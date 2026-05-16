@@ -2,8 +2,6 @@
 
 A fast, native command palette launcher for Linux — inspired by Raycast.
 
-> Forked from [Vicinae](https://github.com/vicinaehq/vicinae) (GPL v3) with ARM64 support, easier installation, and ongoing development.
-
 ## Features
 
 - App launcher with fuzzy search
@@ -24,6 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/Vaiditya2207/seron/main/scripts/ins
 ### Manual build
 
 **Dependencies (Fedora):**
+
 ```bash
 sudo dnf install -y gcc-c++ cmake ninja-build git nodejs npm \
   qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtsvg-devel \
@@ -35,6 +34,7 @@ sudo dnf install -y gcc-c++ cmake ninja-build git nodejs npm \
 ```
 
 **Build:**
+
 ```bash
 git clone git@github.com:Vaiditya2207/seron.git && cd seron
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -48,16 +48,19 @@ sudo cmake --install build
 ## Usage
 
 Start the server:
+
 ```bash
 seron server &
 ```
 
 Toggle the window:
+
 ```bash
 seron toggle
 ```
 
 **Recommended keybind (Hyprland):**
+
 ```
 bindl = $mod, Space, exec, seron toggle
 ```
@@ -67,9 +70,9 @@ bindl = $mod, Space, exec, seron toggle
 ```bash
 sudo usermod -aG input $USER
 ```
+
 Log out and back in after.
 
 ## License
 
-GPL v3 — see [LICENSE](LICENSE).
-Original work © Vicinae contributors.
+Not Decided Yet.
